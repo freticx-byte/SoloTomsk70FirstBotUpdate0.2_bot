@@ -30,7 +30,7 @@ ALL_TEACHERS = [
     {"name": "🎤 Полина Шараева (вокал)", "adult": True, "child": False},
     {"name": "🎤 Катя Беркетова (вокал)", "adult": True, "child": True},
     {"name": "🎤 Вероника Тетеркина (вокал)", "adult": True, "child": False},
-    {"name": "👧 Полина Романовская (детский вокал)", "adult": True, "child": True},
+    {"name": "🎤 Полина Романовская (вокал)", "adult": True, "child": True},
     {"name": "🎤 Катя Калинкина (вокал)", "adult": True, "child": True},
     {"name": "🎤 Наташа Милованова (вокал)", "adult": False, "child": True}
 ]
@@ -628,7 +628,7 @@ async def teacher_katya_berketova(message: types.Message):
     await message.answer("📜 **Дипломы Кати Беркетовой:**", reply_markup=kb)
 
 
-@dp.message(F.text == "🎤 Полина Романовская")
+@dp.message(F.text == "🎤 Полина Романовская (вокал)")
 async def teacher_polina_romanovskaya(message: types.Message):
     desc = ("👩‍🏫 **Полина Романовская**\n\n"
             "🎯 Детский педагог студии «Соло дети»\n"
