@@ -1,13 +1,14 @@
 import asyncio
+import os
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters.command import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import FSInputFile, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboФФardMarkup, InlineKeyboardButton, CallbackQuery
+from aiogram.types import FSInputFile, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-bot = Bot(token="8778398187:AAF6IsW4J7ZSB5TiLAoALU3g1clsxvxR2ZA")
+bot = Bot(token=os.getenv("BOT_TOKEN"))
 dp = Dispatcher(storage=MemoryStorage())
 
 # Словарь для хранения ID закрепленных сообщений
