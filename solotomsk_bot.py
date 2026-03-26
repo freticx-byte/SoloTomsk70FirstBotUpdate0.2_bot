@@ -1,4 +1,5 @@
 import asyncio
+import os
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters.command import Command
 from aiogram.fsm.context import FSMContext
@@ -24,16 +25,20 @@ MAIN_KEYBOARD = ReplyKeyboardMarkup(
     ], resize_keyboard=True
 )
 
-# Все педагоги в одном списке с указанием категорий
+# Все педагоги в одном списке с указанием категорий и путей к фото
 ALL_TEACHERS = [
-    {"name": "🎤 Таня Шварц (вокал)", "adult": True, "child": True},
-    {"name": "🎤 Полина Шараева (вокал)", "adult": True, "child": False},
-    {"name": "🎤 Катя Беркетова (вокал)", "adult": True, "child": True},
-    {"name": "🎤 Вероника Тетеркина (вокал)", "adult": True, "child": False},
-    {"name": "🎤 Полина Романовская (вокал)", "adult": True, "child": True},
-    {"name": "🎤 Катя Калинкина (вокал)", "adult": True, "child": True},
-    {"name": "🎤 Наташа Милованова (вокал)", "adult": False, "child": True}
+    {"name": "🎤 Таня Шварц (вокал)", "adult": True, "child": True, "photo": "Diplom Tania Swarz/Tania.jpg", "desc": "Таня Шварц"},
+    {"name": "🎤 Полина Шараева (вокал)", "adult": True, "child": False, "photo": "PolinaSharaeva/PolinaSharaews.jpg", "desc": "Полина Шараева"},
+    {"name": "🎤 Катя Беркетова (вокал)", "adult": True, "child": True, "photo": "KatyaBerketova/KatyaBerketova.jpg", "desc": "Катя Беркетова"},
+    {"name": "🎤 Вероника Тетеркина (вокал)", "adult": True, "child": False, "photo": "NikaTeterkina/NikaTeterkina.jpg", "desc": "Вероника Тетеркина"},
+    {"name": "🎤 Полина Романовская (вокал)", "adult": True, "child": True, "photo": "PolinaRomanovskaya/SOLO01275.jpg", "desc": "Полина Романовская"},
+    {"name": "🎤 Катя Калинкина (вокал)", "adult": True, "child": True, "photo": "KatyaKalinkina/KatyaKalinkina.jpg", "desc": "Катя Калинкина"},
+    {"name": "🎤 Наташа Милованова (вокал)", "adult": False, "child": True, "photo": "NatashaMilovanova/NatashaMilovanova.jpg", "desc": "Наташа Милованова"}
 ]
+
+# Функция для проверки существования файла
+def file_exists(filepath):
+    return os.path.exists(filepath)
 
 # Взрослые педагоги
 ADULT_TEACHERS = [t["name"] for t in ALL_TEACHERS if t["adult"]]
@@ -84,16 +89,16 @@ ROOMS_DATA = [
 
 # Данные для дипломов
 TANIA_DIPLOMS = [
-    ("🎓 IATS", "IATS"),
-    ("🎓 BIOPHONICS", "BIOPHONICS"),
-    ("🎓 Light Voice", "Light Voice"),
-    ("🎓 Профессиональное образование", "Профессиональное образование"),
-    ("🎓 Estil Voice", "Estil Voice")
+    ("🎓 IATS", "IATS", "Diplom Tania Swarz/diplom 1.1.png"),
+    ("🎓 BIOPHONICS", "BIOPHONICS", "Diplom Tania Swarz/diplom 1.2.png"),
+    ("🎓 Light Voice", "Light Voice", "Diplom Tania Swarz/diplom 1.3.png"),
+    ("🎓 Профессиональное образование", "Профессиональное образование", "Diplom Tania Swarz/diplom 1.4.png"),
+    ("🎓 Estil Voice", "Estil Voice", "Diplom Tania Swarz/diplom 1.5.png")
 ]
 
 POLINA_DIPLOMS = [
-    ("🎓 ESTIL VOICE", "🎓 **ESTIL VOICE**", "1.png"),
-    ("🎓 DIVA VOICE", "🎓 **DIVA VOICE**", "2.png")
+    ("🎓 ESTIL VOICE", "🎓 **ESTIL VOICE**", "PolinaSharaeva/Diploms/1.png"),
+    ("🎓 DIVA VOICE", "🎓 **DIVA VOICE**", "PolinaSharaeva/Diploms/2.png")
 ]
 
 last_faq_messages = {}
@@ -275,11 +280,8 @@ async def process_who(message: types.Message, state: FSMContext):
 async def process_experience_vocal(message: types.Message, state: FSMContext):
     await state.update_data(experience=message.text)
 
-    # Получаем данные о том, кто будет заниматься
     data = await state.get_data()
     who = data.get('who', '')
-
-    # Вызываем ask_goal с параметром who
     await ask_goal(message, state, who)
 
 
@@ -287,29 +289,23 @@ async def process_experience_vocal(message: types.Message, state: FSMContext):
 async def process_experience_instrument(message: types.Message, state: FSMContext):
     await state.update_data(experience=message.text)
 
-    # Получаем данные о том, кто будет заниматься
     data = await state.get_data()
     who = data.get('who', '')
-
-    # Вызываем ask_goal с параметром who
     await ask_goal(message, state, who)
 
 
 async def ask_goal(message: types.Message, state: FSMContext, who: str):
     await state.set_state(LessonForm.goal)
 
-    # Базовая клавиатура для всех
     base_keyboard = [
         [KeyboardButton(text="🎤 Петь/играть для себя")],
         [KeyboardButton(text="🎭 Подготовиться к выступлению")],
         [KeyboardButton(text="💼 Развить навыки для работы")],
     ]
 
-    # Добавляем кнопку для детей, если это ребенок
     if "Ребёнок" in who:
         base_keyboard.append([KeyboardButton(text="👶 Ребёнку для развития")])
 
-    # Добавляем кнопку "Другое" для всех
     base_keyboard.append([KeyboardButton(text="📝 Другое")])
 
     kb = ReplyKeyboardMarkup(
@@ -351,7 +347,6 @@ async def process_source(message: types.Message, state: FSMContext):
 
     data = await state.get_data()
 
-    # Формируем сообщение для администратора
     admin_message = (
         f"📝 **НОВАЯ ЗАЯВКА!**\n\n"
         f"🎯 **Предмет:** {data.get('subject', 'Не указан')}\n"
@@ -366,7 +361,6 @@ async def process_source(message: types.Message, state: FSMContext):
         f"📱 **Username:** @{message.from_user.username if message.from_user.username else 'нет'}"
     )
 
-    # Отправляем администратору
     try:
         await bot.send_message(chat_id=ADMIN_ID, text=admin_message)
         await message.answer(
@@ -504,247 +498,232 @@ async def child_teachers(message: types.Message):
     await message.answer("👶 **Детские педагоги:**", reply_markup=CHILD_TEACHERS_KEYBOARD)
 
 
-# ==================== ОБРАБОТЧИКИ ПЕДАГОГОВ ====================
+# ==================== УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК ПЕДАГОГОВ ====================
 
-@dp.message(F.text == "🎤 Таня Шварц (вокал)")
-async def teacher_taniaswarz(message: types.Message):
-    desc = ("👩‍🏫 **Таня Шварц**\n\n"
-            "⭐ Опыт работы: 10 лет\n\n"
-            "🎯 Помогу:\n"
-            "• Поставить голос\n"
-            "• Записать свою песню\n"
-            "• Подготовиться к выступлению\n\n"
-            "📚 **Образование:**\n"
-            "• Колледж имени Эдисона, ТПУ\n"
-            "• Курсы методики EVT (Италия)")
-    try:
-        await message.answer_photo(photo=FSInputFile("Diplom Tania Swarz/Tania.jpg"), caption=desc)
-    except:
+async def send_teacher_info(message: types.Message, teacher_name: str, teacher_data: dict):
+    """Универсальная функция для отправки информации о педагоге"""
+    
+    # Описания педагогов
+    descriptions = {
+        "Таня Шварц": ("👩‍🏫 **Таня Шварц**\n\n"
+                      "⭐ Опыт работы: 10 лет\n\n"
+                      "🎯 Помогу:\n"
+                      "• Поставить голос\n"
+                      "• Записать свою песню\n"
+                      "• Подготовиться к выступлению\n\n"
+                      "📚 **Образование:**\n"
+                      "• Колледж имени Эдисона, ТПУ\n"
+                      "• Курсы методики EVT (Италия)"),
+        
+        "Полина Шараева": ("👩‍🏫 **Полина Шараева**\n\n"
+                          "⭐ Опыт работы: 10 лет\n\n"
+                          "🎯 Джазовая певица, резидент @jazzcafeunderground\n"
+                          "Работает с известными джазовыми музыкантами\n\n"
+                          "📚 **Образование:**\n"
+                          "• Курс Ольги Кляйн 2023\n"
+                          "• DIVA International 2024\n"
+                          "• Estill Voice training 2023"),
+        
+        "Вероника Тетеркина": ("👩‍🏫 **Вероника Тетеркина**\n\n"
+                              "🎯 Педагог по вокалу, вокалотерапевт\n"
+                              "• Работала в Германии\n"
+                              "• Особенный подход к каждому\n\n"
+                              "📚 ГСКТИИ, курс Ольги Кляйн\n\n"
+                              "⭐ Опыт: 8 лет"),
+        
+        "Катя Беркетова": ("👩‍🏫 **Катя Беркетова**\n\n"
+                          "🏆 Победитель конкурсов в Москве, СПб, Казани\n"
+                          "📺 Участник «Универвидение» на MTV\n"
+                          "✍️ Автор вокальных интенсивов\n\n"
+                          "📚 **Образование:**\n"
+                          "• ГКСКТИИ\n"
+                          "• СПбГИК (магистр)\n\n"
+                          "⭐ Опыт: 9 лет"),
+        
+        "Полина Романовская": ("👩‍🏫 **Полина Романовская**\n\n"
+                              "🎯 Детский педагог студии «Соло дети»\n"
+                              "• Дипломированный специалист\n"
+                              "• Лауреат конкурсов\n"
+                              "• Вокалистка группы «Tres Jolie»\n\n"
+                              "⭐ Опыт: более 3 лет"),
+        
+        "Катя Калинкина": ("👩‍🏫 **Катя Калинкина**\n\n"
+                          "🎯 Работает с дошкольниками и подростками\n"
+                          "• Руководитель коллектива «Мармеладки»\n"
+                          "• Победитель «Педагогический дебют» 2015\n\n"
+                          "📚 ТПУ, ТГПУ"),
+        
+        "Наташа Милованова": ("👩‍🏫 **Наташа Милованова**\n\n"
+                             "🎯 Руководитель детских вокальных групп\n"
+                             "• Педагог высшей категории\n"
+                             "• Лауреат конкурсов\n\n"
+                             "📚 Колледж имени Эдисона Денисова\n\n"
+                             "⭐ Опыт: 6 лет")
+    }
+    
+    desc = descriptions.get(teacher_data["desc"], f"👩‍🏫 **{teacher_data['desc']}**\n\nИнформация скоро появится!")
+    
+    # Пытаемся отправить фото, если файл существует
+    photo_path = teacher_data["photo"]
+    if file_exists(photo_path):
+        try:
+            await message.answer_photo(photo=FSInputFile(photo_path), caption=desc)
+        except:
+            await message.answer(desc)
+    else:
         await message.answer(desc)
+        print(f"Файл {photo_path} не найден для {teacher_name}")
+    
+    # Клавиатура для дипломов
+    if teacher_data["desc"] == "Таня Шварц":
+        kb = ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text=t)] for t, _, _ in TANIA_DIPLOMS] + [
+                [KeyboardButton(text="⬅️ Назад к наставникам")]],
+            resize_keyboard=True
+        )
+        await message.answer("📜 **Дипломы и сертификаты:**", reply_markup=kb)
+    
+    elif teacher_data["desc"] == "Полина Шараева":
+        kb = ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text=t)] for t, _, _ in POLINA_DIPLOMS] + [
+                [KeyboardButton(text="⬅️ Назад к наставникам")]],
+            resize_keyboard=True
+        )
+        await message.answer("📜 **Дипломы и сертификаты:**", reply_markup=kb)
+    
+    elif teacher_data["desc"] == "Вероника Тетеркина":
+        kb = ReplyKeyboardMarkup(
+            keyboard=[
+                [KeyboardButton(text="🎓 Салют талантов")],
+                [KeyboardButton(text="🎓 Estill Voice")],
+                [KeyboardButton(text="⬅️ Назад к наставникам")]
+            ],
+            resize_keyboard=True
+        )
+        await message.answer("📜 **Дипломы и сертификаты:**", reply_markup=kb)
+    
+    elif teacher_data["desc"] == "Катя Беркетова":
+        kb = ReplyKeyboardMarkup(
+            keyboard=[
+                [KeyboardButton(text="🎓 Диплом ГКСКТИИ")],
+                [KeyboardButton(text="🎓 Диплом СПбГИК")],
+                [KeyboardButton(text="🏆 Дипломы конкурсов")],
+                [KeyboardButton(text="⬅️ Назад к наставникам")]
+            ],
+            resize_keyboard=True
+        )
+        await message.answer("📜 **Дипломы Кати Беркетовой:**", reply_markup=kb)
+    
+    else:
+        kb = ReplyKeyboardMarkup(
+            keyboard=[
+                [KeyboardButton(text="📜 Дипломы")],
+                [KeyboardButton(text="⬅️ Назад к наставникам")]
+            ],
+            resize_keyboard=True
+        )
+        await message.answer("📜 **Достижения:**", reply_markup=kb)
 
-    kb = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text=t)] for t, _ in TANIA_DIPLOMS] + [
-            [KeyboardButton(text="⬅️ Назад к наставникам")]],
-        resize_keyboard=True
-    )
-    await message.answer("📜 **Дипломы и сертификаты:**", reply_markup=kb)
+
+# Создаем обработчики для всех педагогов
+for teacher in ALL_TEACHERS:
+    @dp.message(F.text == teacher["name"])
+    async def teacher_handler(message: types.Message, t=teacher):
+        await send_teacher_info(message, t["name"], t)
 
 
 # Дипломы Тани
-for idx, (text, caption) in enumerate(TANIA_DIPLOMS, 1):
+for text, caption, path in TANIA_DIPLOMS:
     @dp.message(F.text == text)
-    async def diploma_handler(message: types.Message, i=idx, cap=caption):
-        try:
-            if i == 1:
-                path = "Diplom Tania Swarz/diplom 1.1.png"
-            else:
-                path = f"Diplom Tania Swarz/diplom 1.{i}.png"
-            await message.answer_photo(photo=FSInputFile(path), caption=f"📜 {cap}")
-        except Exception as e:
-            await message.answer(f"❌ Фото диплома {i} не найдено")
-
-
-@dp.message(F.text == "🎤 Полина Шараева (вокал)")
-async def teacher_polina_sharaeva(message: types.Message):
-    desc = ("👩‍🏫 **Полина Шараева**\n\n"
-            "⭐ Опыт работы: 10 лет\n\n"
-            "🎯 Джазовая певица, резидент @jazzcafeunderground\n"
-            "Работает с известными джазовыми музыкантами\n\n"
-            "📚 **Образование:**\n"
-            "• Курс Ольги Кляйн 2023\n"
-            "• DIVA International 2024\n"
-            "• Estill Voice training 2023")
-    try:
-        await message.answer_photo(photo=FSInputFile("PolinaSharaeva/PolinaSharaews.jpg"), caption=desc)
-    except Exception as e:
-        await message.answer(desc)
-
-    kb = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text=t)] for t, _, _ in POLINA_DIPLOMS] + [
-            [KeyboardButton(text="⬅️ Назад к наставникам")]],
-        resize_keyboard=True
-    )
-    await message.answer("📜 **Дипломы и сертификаты:**", reply_markup=kb)
+    async def diploma_handler(message: types.Message, p=path, cap=caption):
+        if file_exists(p):
+            try:
+                await message.answer_photo(photo=FSInputFile(p), caption=f"📜 {cap}")
+            except:
+                await message.answer(f"❌ Ошибка загрузки диплома")
+        else:
+            await message.answer(f"❌ Фото диплома не найдено: {p}")
 
 
 # Дипломы Полины Шараевой
-for text, caption, filename in POLINA_DIPLOMS:
+for text, caption, path in POLINA_DIPLOMS:
     @dp.message(F.text == text)
-    async def diploma_polina_handler(message: types.Message, fname=filename, cap=caption):
-        try:
-            await message.answer_photo(photo=FSInputFile(f"PolinaSharaeva/diploms/{fname}"), caption=cap)
-        except Exception as e:
+    async def diploma_polina_handler(message: types.Message, p=path, cap=caption):
+        if file_exists(p):
+            try:
+                await message.answer_photo(photo=FSInputFile(p), caption=cap)
+            except:
+                await message.answer("❌ Ошибка загрузки диплома")
+        else:
             await message.answer("❌ Фото диплома не найдено")
-
-
-@dp.message(F.text == "🎤 Вероника Тетеркина (вокал)")
-async def teacher_nika_teterkina(message: types.Message):
-    desc = ("👩‍🏫 **Вероника Тетеркина**\n\n"
-            "🎯 Педагог по вокалу, вокалотерапевт\n"
-            "• Работала в Германии\n"
-            "• Особенный подход к каждому\n\n"
-            "📚 ГСКТИИ, курс Ольги Кляйн\n\n"
-            "⭐ Опыт: 8 лет")
-    try:
-        await message.answer_photo(photo=FSInputFile("NikaTeterkina/NikaTeterkina.jpg"), caption=desc)
-    except:
-        await message.answer(desc)
-
-    kb = ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="🎓 Салют талантов")],
-            [KeyboardButton(text="🎓 Estill Voice")],
-            [KeyboardButton(text="⬅️ Назад к наставникам")]
-        ],
-        resize_keyboard=True
-    )
-    await message.answer("📜 **Дипломы и сертификаты:**", reply_markup=kb)
-
-
-@dp.message(F.text == "🎤 Катя Беркетова (вокал)")
-async def teacher_katya_berketova(message: types.Message):
-    desc = ("👩‍🏫 **Катя Беркетова**\n\n"
-            "🏆 Победитель конкурсов в Москве, СПб, Казани\n"
-            "📺 Участник «Универвидение» на MTV\n"
-            "✍️ Автор вокальных интенсивов\n\n"
-            "📚 **Образование:**\n"
-            "• ГКСКТИИ\n"
-            "• СПбГИК (магистр)\n\n"
-            "⭐ Опыт: 9 лет")
-    try:
-        await message.answer_photo(photo=FSInputFile("KatyaBerketova/KatyaBerketova.jpg"), caption=desc)
-    except:
-        await message.answer(desc)
-
-    kb = ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="🎓 Диплом ГКСКТИИ")],
-            [KeyboardButton(text="🎓 Диплом СПбГИК")],
-            [KeyboardButton(text="🏆 Дипломы конкурсов")],
-            [KeyboardButton(text="⬅️ Назад к наставникам")]
-        ],
-        resize_keyboard=True
-    )
-    await message.answer("📜 **Дипломы Кати Беркетовой:**", reply_markup=kb)
-
-
-@dp.message(F.text == "🎤 Полина Романовская (вокал)")
-async def teacher_polina_romanovskaya(message: types.Message):
-    desc = ("👩‍🏫 **Полина Романовская**\n\n"
-            "🎯 Детский педагог студии «Соло дети»\n"
-            "• Дипломированный специалист\n"
-            "• Лауреат конкурсов\n"
-            "• Вокалистка группы «Tres Jolie»\n\n"
-            "⭐ Опыт: более 3 лет")
-    try:
-        await message.answer_photo(photo=FSInputFile("PolinaRomanovskaya/SOLO01275.jpg"), caption=desc)
-    except:
-        await message.answer(desc)
-
-    kb = ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="📜 Дипломы")],
-            [KeyboardButton(text="⬅️ Назад к наставникам")]
-        ],
-        resize_keyboard=True
-    )
-    await message.answer("📜 **Достижения Полины Романовской:**", reply_markup=kb)
-
-
-@dp.message(F.text == "🎤 Катя Калинкина (вокал)")
-async def teacher_katya_kalinkina(message: types.Message):
-    desc = ("👩‍🏫 **Катя Калинкина**\n\n"
-            "🎯 Работает с дошкольниками и подростками\n"
-            "• Руководитель коллектива «Мармеладки»\n"
-            "• Победитель «Педагогический дебют» 2015\n\n"
-            "📚 ТПУ, ТГПУ")
-    try:
-        await message.answer_photo(photo=FSInputFile("KatyaKalinkina/KatyaKalinkina.jpg"), caption=desc)
-    except:
-        await message.answer(desc)
-
-    kb = ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="📜 Дипломы")],
-            [KeyboardButton(text="⬅️ Назад к наставникам")]
-        ],
-        resize_keyboard=True
-    )
-    await message.answer("📜 **Достижения Кати Калинкиной:**", reply_markup=kb)
-
-
-@dp.message(F.text == "🎤 Наташа Милованова (вокал)")
-async def teacher_natasha_milovanova(message: types.Message):
-    desc = ("👩‍🏫 **Наташа Милованова**\n\n"
-            "🎯 Руководитель детских вокальных групп\n"
-            "• Педагог высшей категории\n"
-            "• Лауреат конкурсов\n\n"
-            "📚 Колледж имени Эдисона Денисова\n\n"
-            "⭐ Опыт: 6 лет")
-    try:
-        await message.answer_photo(photo=FSInputFile("NatashaMilovanova/NatashaMilovanova.jpg"), caption=desc)
-    except:
-        await message.answer(desc)
-
-    kb = ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="📜 Дипломы")],
-            [KeyboardButton(text="⬅️ Назад к наставникам")]
-        ],
-        resize_keyboard=True
-    )
-    await message.answer("📜 **Достижения Наташи Миловановой:**", reply_markup=kb)
-
-
-# Дипломы для детских педагогов
-@dp.message(F.text == "📜 Дипломы")
-async def diplomas_child_teachers(message: types.Message):
-    await message.answer("📜 **Дипломы и сертификаты пока в разработке. Скоро добавлю! 🎓✨")
 
 
 # Дипломы Вероники Тетеркиной
 @dp.message(F.text == "🎓 Салют талантов")
 async def diploma_nika_t1(message: types.Message):
-    try:
-        await message.answer_photo(photo=FSInputFile("NikaTeterkina/1.png"), caption="🏆 **Салют талантов**")
-    except:
+    path = "NikaTeterkina/1.png"
+    if file_exists(path):
+        try:
+            await message.answer_photo(photo=FSInputFile(path), caption="🏆 **Салют талантов**")
+        except:
+            await message.answer("❌ Ошибка загрузки диплома")
+    else:
         await message.answer("❌ Фото диплома не найдено")
 
 
 @dp.message(F.text == "🎓 Estill Voice")
 async def diploma_nika_t2(message: types.Message):
-    try:
-        await message.answer_photo(photo=FSInputFile("NikaTeterkina/2.png"), caption="🎓 **Estill Voice**")
-    except:
+    path = "NikaTeterkina/2.png"
+    if file_exists(path):
+        try:
+            await message.answer_photo(photo=FSInputFile(path), caption="🎓 **Estill Voice**")
+        except:
+            await message.answer("❌ Ошибка загрузки диплома")
+    else:
         await message.answer("❌ Фото диплома не найдено")
 
 
 # Дипломы Кати Беркетовой
 @dp.message(F.text == "🎓 Диплом ГКСКТИИ")
 async def diploma_katya_b1(message: types.Message):
-    try:
-        await message.answer_photo(photo=FSInputFile("KatyaBerketova/diplom_gksktii.jpg"),
-                                   caption="🎓 ГКСКТИИ")
-    except:
+    path = "KatyaBerketova/diplom_gksktii.jpg"
+    if file_exists(path):
+        try:
+            await message.answer_photo(photo=FSInputFile(path), caption="🎓 ГКСКТИИ")
+        except:
+            await message.answer("❌ Ошибка загрузки диплома")
+    else:
         await message.answer("❌ Фото диплома не найдено")
 
 
 @dp.message(F.text == "🎓 Диплом СПбГИК")
 async def diploma_katya_b2(message: types.Message):
-    try:
-        await message.answer_photo(photo=FSInputFile("KatyaBerketova/diplom_spbgik.jpg"),
-                                   caption="🎓 СПбГИК, Магистр")
-    except:
+    path = "KatyaBerketova/diplom_spbgik.jpg"
+    if file_exists(path):
+        try:
+            await message.answer_photo(photo=FSInputFile(path), caption="🎓 СПбГИК, Магистр")
+        except:
+            await message.answer("❌ Ошибка загрузки диплома")
+    else:
         await message.answer("❌ Фото диплома не найдено")
 
 
 @dp.message(F.text == "🏆 Дипломы конкурсов")
 async def diploma_katya_b3(message: types.Message):
-    try:
-        await message.answer_photo(photo=FSInputFile("KatyaBerketova/diplom_konkursy.jpg"),
-                                   caption="🏆 Дипломы конкурсов")
-    except:
+    path = "KatyaBerketova/diplom_konkursy.jpg"
+    if file_exists(path):
+        try:
+            await message.answer_photo(photo=FSInputFile(path), caption="🏆 Дипломы конкурсов")
+        except:
+            await message.answer("❌ Ошибка загрузки диплома")
+    else:
         await message.answer("❌ Фото диплома не найдено")
+
+
+# Дипломы для детских педагогов
+@dp.message(F.text == "📜 Дипломы")
+async def diplomas_child_teachers(message: types.Message):
+    await message.answer("📜 **Дипломы и сертификаты пока в разработке. Скоро добавлю! 🎓✨")
 
 
 # Обработчики навигации
@@ -764,7 +743,6 @@ async def back_to_main_from_anywhere(message: types.Message):
 async def info_price(message: types.Message):
     await message.answer("💵 **Расценки на обучение:**\n\n⏳ Загружаю актуальные цены...")
 
-    # Первое фото с ценами на инструменты
     try:
         photo1 = FSInputFile("Price tags/raszenci1.jpg")
         caption1 = (
@@ -787,7 +765,6 @@ async def info_price(message: types.Message):
         print(f"Ошибка загрузки raszenci1.jpg: {e}")
         await message.answer("❌ Ошибка загрузки изображения 1")
 
-    # Второе фото с ценами на групповые занятия
     try:
         photo2 = FSInputFile("Price tags/raszenci2.jpg")
         caption2 = (
@@ -811,7 +788,6 @@ async def info_price(message: types.Message):
         print(f"Ошибка загрузки raszenci2.jpg: {e}")
         await message.answer("❌ Ошибка загрузки изображения 2")
 
-    # Третье фото (если есть)
     try:
         photo3 = FSInputFile("Price tags/raszenci3.jpg")
         await message.answer_photo(photo=photo3)
