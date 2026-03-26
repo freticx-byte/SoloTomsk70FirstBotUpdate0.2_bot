@@ -628,7 +628,7 @@ async def teacher_katya_berketova(message: types.Message):
     await message.answer("📜 **Дипломы Кати Беркетовой:**", reply_markup=kb)
 
 
-@dp.message(F.text == "👧 Полина Романовская (детский вокал)")
+@dp.message(F.text == "🎤 Полина Романовская")
 async def teacher_polina_romanovskaya(message: types.Message):
     desc = ("👩‍🏫 **Полина Романовская**\n\n"
             "🎯 Детский педагог студии «Соло дети»\n"
