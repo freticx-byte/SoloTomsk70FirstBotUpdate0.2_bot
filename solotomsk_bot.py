@@ -179,17 +179,29 @@ async def reviews_reply(message: types.Message):
 
 @dp.message(F.text == "🏠 Наши залы")
 async def rooms_reply(message: types.Message):
-    for i, (room, text) in enumerate(ROOMS_DATA, 1):
+    # Залы: 1 - Малый (miniroom), 2 - Большой (midleroom), 3 - Средний (bigroom)
+    rooms = [
+        {"folder": "miniroom", "name": "Малый", "emoji": "🎤", "num": 1},
+        {"folder": "midleroom", "name": "Большой", "emoji": "🎸", "num": 2},
+        {"folder": "bigroom", "name": "Средний", "emoji": "🎧", "num": 3}
+    ]
+    
+    for room in rooms:
+        # Первое фото
         try:
-            await message.answer_photo(photo=FSInputFile(f"rooms/{room}/room{i}.1.png"), caption=text)
-        except:
-            await message.answer(f"Фото зала {i} (1) не найдено")
+            photo1 = FSInputFile(f"rooms/{room['folder']}/room{room['num']}.1.png")
+            await message.answer_photo(photo=photo1, caption=f"{room['emoji']} Зал {room['num']}: {room['name']}")
+        except Exception as e:
+            print(f"Ошибка загрузки фото зала {room['num']} (1): {e}")
+            await message.answer(f"Фото зала {room['num']} (1) не найдено")
+        
+        # Второе фото (дополнительный ракурс)
         try:
-            await message.answer_photo(photo=FSInputFile(f"rooms/{room}/room{i}.2.png"),
-                                         caption=f"{'🎤' if i == 1 else '🎧' if i == 2 else '🎸'} Зал {i} - доп. ракурс")
-        except:
-            await message.answer(f"Фото зала {i} (2) не найдено")
-
+            photo2 = FSInputFile(f"rooms/{room['folder']}/room{room['num']}.2.png")
+            await message.answer_photo(photo=photo2, caption=f"{room['emoji']} Зал {room['num']} - дополнительный ракурс")
+        except Exception as e:
+            print(f"Ошибка загрузки фото зала {room['num']} (2): {e}")
+            await message.answer(f"Фото зала {room['num']} (2) не найдено")
 
 @dp.message(F.text == "🌐 Сайт | Telegram")
 async def site_reply(message: types.Message):
