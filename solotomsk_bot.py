@@ -77,7 +77,7 @@ FAQ_ANSWERS = {
     'faq_6': "👶👵 **Возраст:**\n\n• От 3 до 50+ лет\n• В любом возрасте можно развить голос"
 }
 
-# Данные для комнат (исправлено: большой и средний поменяны местами)
+# Данные для комнат
 ROOMS_DATA = [
     ("miniroom",
      "🎤 **Зал 1: Малый**\n\n✅ Уютный зал с зеркалом\n✅ Электронное пианино\n✅ Вокальная стойка\n✅ Wi-Fi\n\nИдеально для записи вокала и сольных репетиций."),
@@ -140,7 +140,7 @@ async def send_inline_buttons(message: types.Message):
         InlineKeyboardButton(text="📍 Где мы находимся?", callback_data="ourplace"),
         InlineKeyboardButton(text="🤫 Анонимный вопрос", callback_data="anonimquestion"), width=2
     )
-    sent_msg = await message.answer("🔽 **Полезные ссылки:**", reply_markup=builder.as_markup())
+    sent_msg = await message.answer("**Полезные ссылки:**", reply_markup=builder.as_markup())
 
     # Закрепляем сообщение
     try:
@@ -162,7 +162,7 @@ async def cmd_start(message: types.Message):
         bonus_text = "🎁 **Вступайте в наш телеграм канал, получите занятия в подарок или с хорошей скидкой** ✌️🎶\n\nhttps://t.me/+EMU-EPeAfwlkYTFi"
         await message.answer(bonus_text)
 
-    # Основное меню (сверху, под приветствием)
+    # Основное меню (сверху)
     await message.answer("📋 **Основное меню:**", reply_markup=MAIN_KEYBOARD)
     
     # Инлайн-кнопки (снизу)
