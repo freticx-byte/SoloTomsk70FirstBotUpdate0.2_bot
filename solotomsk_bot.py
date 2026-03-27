@@ -15,15 +15,20 @@ dp = Dispatcher(storage=MemoryStorage())
 pinned_messages = {}
 
 # Константы с клавиатурами
-MAIN_KEYBOARD = ReplyKeyboardMarkup(
+# ПОЛЕЗНЫЕ ССЫЛКИ (reply-кнопки) - сверху
+USEFUL_LINKS_KEYBOARD = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="📄 Информация о занятиях")],
-        [KeyboardButton(text="🧑‍🏫 Творческие наставники")],
-        [KeyboardButton(text="💰 Стоимость обучения")],
-        [KeyboardButton(text="🎤 Записаться на пробный")],
-        [KeyboardButton(text="📝 Хочу записаться на занятия")]
+        [KeyboardButton(text="❓ Частые вопросы")],
+        [KeyboardButton(text="⭐ Отзывы")],
+        [KeyboardButton(text="🏠 Наши залы")],
+        [KeyboardButton(text="🌐 Сайт | Telegram")],
+        [KeyboardButton(text="📍 Где мы находимся?")],
+        [KeyboardButton(text="🤫 Анонимный вопрос")]
     ], resize_keyboard=True
 )
+
+# ОСНОВНОЕ МЕНЮ (инлайн-кнопки) - снизу
+MAIN_MENU_INLINE = None  # будет создано позже
 
 # Все педагоги в одном списке с указанием категорий и путей к фото
 ALL_TEACHERS = [
@@ -129,18 +134,24 @@ async def send_welcome(message: types.Message):
         await message.answer(welcome_text)
 
 
-async def send_inline_buttons(message: types.Message):
-    """Отправляет инлайн-кнопки"""
+async def send_main_menu_inline(message: types.Message):
+    """Отправляет основное меню (инлайн-кнопки)"""
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text="❓ Частые вопросы", callback_data="faq_menu"),
-        InlineKeyboardButton(text="⭐ Отзывы", callback_data="reviews"),
-        InlineKeyboardButton(text="🏠 Наши залы", callback_data="rooms"),
-        InlineKeyboardButton(text="🌐 Сайт | Telegram", callback_data="site"),
-        InlineKeyboardButton(text="📍 Где мы находимся?", callback_data="ourplace"),
-        InlineKeyboardButton(text="🤫 Анонимный вопрос", callback_data="anonimquestion"), width=2
+        InlineKeyboardButton(text="📄 Информация о занятиях", callback_data="info_lessons"),
+        InlineKeyboardButton(text="🧑‍🏫 Творческие наставники", callback_data="info_teachers"),
+        width=2
     )
-    sent_msg = await message.answer("**Полезные ссылки:**", reply_markup=builder.as_markup())
+    builder.row(
+        InlineKeyboardButton(text="💰 Стоимость обучения", callback_data="info_price"),
+        InlineKeyboardButton(text="🎤 Записаться на пробный", callback_data="start_trial"),
+        width=2
+    )
+    builder.row(
+        InlineKeyboardButton(text="📝 Хочу записаться на занятия", callback_data="start_enroll"),
+        width=1
+    )
+    sent_msg = await message.answer("📋 **Основное меню:**", reply_markup=builder.as_markup())
 
     # Закрепляем сообщение
     try:
@@ -162,17 +173,167 @@ async def cmd_start(message: types.Message):
         bonus_text = "🎁 **Вступайте в наш телеграм канал, получите занятия в подарок или с хорошей скидкой** ✌️🎶\n\nhttps://t.me/+EMU-EPeAfwlkYTFi"
         await message.answer(bonus_text)
 
-    # Основное меню (сверху)
-    await message.answer("📋 **Основное меню:**", reply_markup=MAIN_KEYBOARD)
+    # ПОЛЕЗНЫЕ ССЫЛКИ (reply-кнопки) - сверху
+    await message.answer("🔽 **Полезные ссылки:**", reply_markup=USEFUL_LINKS_KEYBOARD)
     
-    # Инлайн-кнопки (снизу)
-    await send_inline_buttons(message)
+    # ОСНОВНОЕ МЕНЮ (инлайн-кнопки) - снизу
+    await send_main_menu_inline(message)
 
 
-# ==================== СИСТЕМА ЗАПИСИ ====================
+# ==================== ОБРАБОТЧИКИ ДЛЯ ПОЛЕЗНЫХ ССЫЛОК (reply-кнопки) ====================
 
-@dp.message(F.text == "🎤 Записаться на пробный")
-async def start_trial_form(message: types.Message, state: FSMContext):
+@dp.message(F.text == "❓ Частые вопросы")
+async def faq_menu_reply(message: types.Message):
+    builder = InlineKeyboardBuilder()
+    faq_buttons = [
+        ("💰 Стоимость", "faq_1"),
+        ("⏰ Расписание", "faq_2"),
+        ("📅 Регулярность", "faq_3"),
+        ("🎓 Педагоги", "faq_4"),
+        ("📚 Структура урока", "faq_5"),
+        ("👶👵 Возраст", "faq_6")
+    ]
+    for i in range(0, len(faq_buttons), 2):
+        builder.row(
+            InlineKeyboardButton(text=faq_buttons[i][0], callback_data=faq_buttons[i][1]),
+            InlineKeyboardButton(text=faq_buttons[i + 1][0], callback_data=faq_buttons[i + 1][1]), width=2
+        )
+    await message.answer("❓ **Выберите вопрос:**", reply_markup=builder.as_markup())
+
+
+@dp.message(F.text == "⭐ Отзывы")
+async def reviews_reply(message: types.Message):
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📱 Перейти в канал с отзывами", url="https://t.me/solo70_reviews")]])
+    await message.answer("👥 **Наш канал с отзывами:**", reply_markup=keyboard)
+
+
+@dp.message(F.text == "🏠 Наши залы")
+async def rooms_reply(message: types.Message):
+    for i, (room, text) in enumerate(ROOMS_DATA, 1):
+        try:
+            await message.answer_photo(photo=FSInputFile(f"rooms/{room}/room{i}.1.png"), caption=text)
+        except:
+            await message.answer(f"Фото зала {i} (1) не найдено")
+        try:
+            await message.answer_photo(photo=FSInputFile(f"rooms/{room}/room{i}.2.png"),
+                                         caption=f"{'🎤' if i == 1 else '🎸' if i == 2 else '🎧'} Зал {i} - дополнительный ракурс")
+        except:
+            await message.answer(f"Фото зала {i} (2) не найдено")
+
+
+@dp.message(F.text == "🌐 Сайт | Telegram")
+async def site_reply(message: types.Message):
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🌐 Наш сайт", url="https://solotomsk.ru"),
+            InlineKeyboardButton(text="📱 Telegram канал", url="https://t.me/+EMU-EPeAfwlkYTFi")
+        ]
+    ])
+    await message.answer("🔗 **Полезные ссылки:**", reply_markup=keyboard)
+
+
+@dp.message(F.text == "📍 Где мы находимся?")
+async def ourplace_reply(message: types.Message):
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="📍 2ГИС", url="https://2gis.ru/tomsk/geo/422848120231246"),
+            InlineKeyboardButton(text="🗺️ Яндекс Карты",
+                                 url="https://yandex.ru/maps/67/tomsk/house/ulitsa_nikitina_8a/bE0YfwJpTUwPQFtsfXh2dnVmZA==/?ll=84.959497%2C56.477950&z=17")
+        ]
+    ])
+    await message.answer("📍 **Мы на картах:**", reply_markup=keyboard)
+
+
+@dp.message(F.text == "🤫 Анонимный вопрос")
+async def anonim_reply(message: types.Message):
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🤫 Задать анонимный вопрос", url="t.me/anonaskbot?start=kpsgjhclry2zs97u")]])
+    await message.answer("📱 **Нажмите кнопку ниже чтобы задать анонимный вопрос:**", reply_markup=keyboard)
+
+
+# ==================== ОБРАБОТЧИКИ ДЛЯ ОСНОВНОГО МЕНЮ (инлайн-кнопки) ====================
+
+@dp.callback_query(lambda c: c.data == "info_lessons")
+async def info_lessons_callback(c: CallbackQuery):
+    await c.answer()
+    await c.message.answer(
+        "📚 **Структура урока по вокалу:**\n\n"
+        "1️⃣ Определение целей и способностей ученика\n"
+        "2️⃣ Разминка и тренировка дыхания\n"
+        "3️⃣ Упражнения для голоса\n"
+        "4️⃣ Работа с репертуаром\n"
+        "5️⃣ Подготовка к выступлению"
+    )
+
+
+@dp.callback_query(lambda c: c.data == "info_teachers")
+async def info_teachers_callback(c: CallbackQuery):
+    await c.answer()
+    await c.message.answer("👥 **Выберите категорию педагогов:**", reply_markup=TEACHERS_KEYBOARD)
+
+
+@dp.callback_query(lambda c: c.data == "info_price")
+async def info_price_callback(c: CallbackQuery):
+    await c.answer()
+    await c.message.answer("💵 **Расценки на обучение:**\n\n⏳ Загружаю актуальные цены...")
+
+    try:
+        photo1 = FSInputFile("Price tags/raszenci1.jpg")
+        caption1 = (
+            "🎹 **Фортепиано**\n"
+            "• Абонемент: 6000 руб/мес (4 занятия) — 1500 руб/занятие\n"
+            "• Разовое занятие: 1900 руб\n"
+            "Только индивидуально\n\n"
+            "🎸 **Гитара / Укулеле**\n"
+            "• Абонемент: 6000 руб/мес (4 занятия) — 1500 руб/занятие\n"
+            "• Разовое занятие: 1900 руб\n"
+            "Только индивидуально\n\n"
+            "👥 **Мини-группа (2 человека)**\n"
+            "• 3600 руб/мес (900 руб/занятие)\n\n"
+            "⏱️ Продолжительность занятия — 55 минут\n\n"
+            "🎵 В результате занятий вы научитесь практическим навыкам игры на инструменте "
+            "и познакомитесь с азами музыкальной теории."
+        )
+        await c.message.answer_photo(photo=photo1, caption=caption1)
+    except Exception as e:
+        print(f"Ошибка загрузки raszenci1.jpg: {e}")
+        await c.message.answer("❌ Ошибка загрузки изображения 1")
+
+    try:
+        photo2 = FSInputFile("Price tags/raszenci2.jpg")
+        caption2 = (
+            "🎵 **Групповые занятия**\n\n"
+            "🎤 **Хор для взрослых** (среда, 19:00)\n"
+            "• 300 руб/занятие\n\n"
+            "👥 **Группа для подростков** (вторник, четверг)\n"
+            "• 6100 руб/мес (12 занятий)\n\n"
+            "👶 **Группа для малышей 4-5 лет** (вторник, четверг, 19:00)\n"
+            "• 4100 руб/мес (8 занятий)\n\n"
+            "🎷 **Джазовый ансамбль с Анастасией Сатаровой**\n"
+            "• Для взрослых, понедельник 19:00\n"
+            "• 5600 руб/мес (8 занятий по 45 мин)\n\n"
+            "🏠 **Аренда зала**\n"
+            "• Для учеников: 700 руб/час\n"
+            "• Для гостей студии: от 1100 руб/час\n"
+            "*(точная стоимость зависит от количества человек и формата мероприятия)*"
+        )
+        await c.message.answer_photo(photo=photo2, caption=caption2)
+    except Exception as e:
+        print(f"Ошибка загрузки raszenci2.jpg: {e}")
+        await c.message.answer("❌ Ошибка загрузки изображения 2")
+
+    try:
+        photo3 = FSInputFile("Price tags/raszenci3.jpg")
+        await c.message.answer_photo(photo=photo3)
+    except Exception as e:
+        print(f"Ошибка загрузки raszenci3.jpg: {e}")
+        pass
+
+
+@dp.callback_query(lambda c: c.data == "start_trial")
+async def start_trial_callback(c: CallbackQuery, state: FSMContext):
+    await c.answer()
     await state.set_state(LessonForm.subject)
 
     kb = ReplyKeyboardMarkup(
@@ -184,15 +345,16 @@ async def start_trial_form(message: types.Message, state: FSMContext):
         resize_keyboard=True,
         one_time_keyboard=True
     )
-    await message.answer(
+    await c.message.answer(
         "🎯 **Выберите предмет:**\n\n"
         "Чем хотите заниматься?",
         reply_markup=kb
     )
 
 
-@dp.message(F.text == "📝 Хочу записаться на занятия")
-async def start_enroll_form(message: types.Message, state: FSMContext):
+@dp.callback_query(lambda c: c.data == "start_enroll")
+async def start_enroll_callback(c: CallbackQuery, state: FSMContext):
+    await c.answer()
     await state.set_state(LessonForm.subject)
 
     kb = ReplyKeyboardMarkup(
@@ -204,12 +366,14 @@ async def start_enroll_form(message: types.Message, state: FSMContext):
         resize_keyboard=True,
         one_time_keyboard=True
     )
-    await message.answer(
+    await c.message.answer(
         "🎯 **Выберите предмет:**\n\n"
         "Чем хотите заниматься?",
         reply_markup=kb
     )
 
+
+# ==================== ОБРАБОТЧИКИ ДЛЯ АНКЕТЫ ====================
 
 @dp.message(LessonForm.subject)
 async def process_subject(message: types.Message, state: FSMContext):
@@ -282,7 +446,6 @@ async def process_who(message: types.Message, state: FSMContext):
 @dp.message(LessonForm.experience_vocal)
 async def process_experience_vocal(message: types.Message, state: FSMContext):
     await state.update_data(experience=message.text)
-
     data = await state.get_data()
     who = data.get('who', '')
     await ask_goal(message, state, who)
@@ -291,7 +454,6 @@ async def process_experience_vocal(message: types.Message, state: FSMContext):
 @dp.message(LessonForm.experience_instrument)
 async def process_experience_instrument(message: types.Message, state: FSMContext):
     await state.update_data(experience=message.text)
-
     data = await state.get_data()
     who = data.get('who', '')
     await ask_goal(message, state, who)
@@ -347,7 +509,6 @@ async def process_time(message: types.Message, state: FSMContext):
 @dp.message(LessonForm.source)
 async def process_source(message: types.Message, state: FSMContext):
     await state.update_data(source=message.text)
-
     data = await state.get_data()
 
     admin_message = (
@@ -369,127 +530,19 @@ async def process_source(message: types.Message, state: FSMContext):
         await message.answer(
             "✅ **Спасибо! Ваша заявка отправлена.**\n\n"
             "Мы свяжемся с вами в ближайшее время, чтобы подобрать удобное время и педагога. "
-            "Без спама, только по делу 🧡",
-            reply_markup=MAIN_KEYBOARD
+            "Без спама, только по делу 🧡"
         )
     except Exception as e:
         await message.answer(
             "❌ **Ошибка отправки заявки.**\n\n"
-            "Пожалуйста, свяжитесь с нами напрямую по телефону: +7-(913)-856-93-10",
-            reply_markup=MAIN_KEYBOARD
+            "Пожалуйста, свяжитесь с нами напрямую по телефону: +7-(913)-856-93-10"
         )
         print(f"Ошибка отправки админу: {e}")
 
     await state.clear()
 
 
-# ==================== ОБРАБОТЧИКИ КНОПОК ====================
-
-@dp.callback_query(lambda c: c.data == "reviews")
-async def process_reviews_callback(c: CallbackQuery):
-    await c.answer()
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📱 Перейти в канал с отзывами", url="https://t.me/solo70_reviews")]])
-    await c.message.answer("👥 **Наш канал с отзывами:**", reply_markup=keyboard)
-
-
-@dp.callback_query(lambda c: c.data == "anonimquestion")
-async def process_anonimquestion_callback(c: CallbackQuery):
-    await c.answer()
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🤫 Задать анонимный вопрос", url="t.me/anonaskbot?start=kpsgjhclry2zs97u")]])
-    await c.message.answer("📱 **Нажмите кнопку ниже чтобы задать анонимный вопрос:**", reply_markup=keyboard)
-
-
-@dp.callback_query(lambda c: c.data == "faq_menu")
-async def process_faq_menu_callback(c: CallbackQuery):
-    await c.answer()
-    builder = InlineKeyboardBuilder()
-    faq_buttons = [
-        ("💰 Стоимость", "faq_1"),
-        ("⏰ Расписание", "faq_2"),
-        ("📅 Регулярность", "faq_3"),
-        ("🎓 Педагоги", "faq_4"),
-        ("📚 Структура урока", "faq_5"),
-        ("👶👵 Возраст", "faq_6")
-    ]
-    for i in range(0, len(faq_buttons), 2):
-        builder.row(
-            InlineKeyboardButton(text=faq_buttons[i][0], callback_data=faq_buttons[i][1]),
-            InlineKeyboardButton(text=faq_buttons[i + 1][0], callback_data=faq_buttons[i + 1][1]), width=2
-        )
-    await c.message.answer("❓ **Выберите вопрос:**", reply_markup=builder.as_markup())
-
-
-@dp.callback_query(lambda c: c.data == "ourplace")
-async def process_ourplace_callback(c: CallbackQuery):
-    await c.answer()
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="📍 2ГИС", url="https://2gis.ru/tomsk/geo/422848120231246"),
-            InlineKeyboardButton(text="🗺️ Яндекс Карты",
-                                 url="https://yandex.ru/maps/67/tomsk/house/ulitsa_nikitina_8a/bE0YfwJpTUwPQFtsfXh2dnVmZA==/?ll=84.959497%2C56.477950&z=17")
-        ]
-    ])
-    await c.message.answer("📍 **Мы на картах:**", reply_markup=keyboard)
-
-
-@dp.callback_query(lambda c: c.data == "site")
-async def process_site_callback(c: CallbackQuery):
-    await c.answer()
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="🌐 Наш сайт", url="https://solotomsk.ru"),
-            InlineKeyboardButton(text="📱 Telegram канал", url="https://t.me/+EMU-EPeAfwlkYTFi")
-        ]
-    ])
-    await c.message.answer("🔗 **Полезные ссылки:**", reply_markup=keyboard)
-
-
-@dp.callback_query(lambda c: c.data and c.data.startswith('faq_') and c.data != "faq_menu")
-async def process_faq_callback(c: CallbackQuery):
-    await c.answer()
-    user_id = c.from_user.id
-    if user_id in last_faq_messages:
-        try:
-            await bot.delete_message(chat_id=c.message.chat.id, message_id=last_faq_messages[user_id])
-        except:
-            pass
-    sent_message = await c.message.answer(FAQ_ANSWERS.get(c.data, "❌ Ответ не найден"))
-    last_faq_messages[user_id] = sent_message.message_id
-
-
-@dp.callback_query(lambda c: c.data == "rooms")
-async def process_rooms_callback(c: CallbackQuery):
-    await c.answer()
-    for i, (room, text) in enumerate(ROOMS_DATA, 1):
-        try:
-            await c.message.answer_photo(photo=FSInputFile(f"rooms/{room}/room{i}.1.png"), caption=text)
-        except:
-            await c.message.answer(f"Фото зала {i} (1) не найдено")
-        try:
-            await c.message.answer_photo(photo=FSInputFile(f"rooms/{room}/room{i}.2.png"),
-                                         caption=f"{'🎤' if i == 1 else '🎸' if i == 2 else '🎧'} Зал {i} - дополнительный ракурс")
-        except:
-            await c.message.answer(f"Фото зала {i} (2) не найдено")
-
-
-@dp.message(F.text == "📄 Информация о занятиях")
-async def info_lessons(message: types.Message):
-    await message.answer(
-        "📚 **Структура урока по вокалу:**\n\n"
-        "1️⃣ Определение целей и способностей ученика\n"
-        "2️⃣ Разминка и тренировка дыхания\n"
-        "3️⃣ Упражнения для голоса\n"
-        "4️⃣ Работа с репертуаром\n"
-        "5️⃣ Подготовка к выступлению"
-    )
-
-
-@dp.message(F.text == "🧑‍🏫 Творческие наставники")
-async def info_teachers(message: types.Message):
-    await message.answer("👥 **Выберите категорию педагогов:**", reply_markup=TEACHERS_KEYBOARD)
-
+# ==================== ОБРАБОТЧИКИ ДЛЯ НАСТАВНИКОВ ====================
 
 @dp.message(F.text == "👥 Взрослые педагоги")
 async def adult_teachers(message: types.Message):
@@ -501,12 +554,8 @@ async def child_teachers(message: types.Message):
     await message.answer("👶 **Детские педагоги:**", reply_markup=CHILD_TEACHERS_KEYBOARD)
 
 
-# ==================== УНИВЕРСАЛЬНЫЙ ОБРАБОТЧИК ПЕДАГОГОВ ====================
-
-async def send_teacher_info(message: types.Message, teacher_name: str, teacher_data: dict):
-    """Универсальная функция для отправки информации о педагоге"""
-    
-    # Описания педагогов
+# Универсальный обработчик педагогов
+async def send_teacher_info(message: types.Message, teacher_data: dict):
     descriptions = {
         "Таня Шварц": ("👩‍🏫 **Таня Шварц**\n\n"
                       "⭐ Опыт работы: 10 лет\n\n"
@@ -566,7 +615,6 @@ async def send_teacher_info(message: types.Message, teacher_name: str, teacher_d
     
     desc = descriptions.get(teacher_data["desc"], f"👩‍🏫 **{teacher_data['desc']}**\n\nИнформация скоро появится!")
     
-    # Пытаемся отправить фото, если файл существует
     photo_path = teacher_data["photo"]
     if file_exists(photo_path):
         try:
@@ -575,9 +623,7 @@ async def send_teacher_info(message: types.Message, teacher_name: str, teacher_d
             await message.answer(desc)
     else:
         await message.answer(desc)
-        print(f"Файл {photo_path} не найден для {teacher_name}")
     
-    # Клавиатура для дипломов
     if teacher_data["desc"] == "Таня Шварц":
         kb = ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text=t)] for t, _, _ in TANIA_DIPLOMS] + [
@@ -628,11 +674,10 @@ async def send_teacher_info(message: types.Message, teacher_name: str, teacher_d
         await message.answer("📜 **Достижения:**", reply_markup=kb)
 
 
-# Создаем обработчики для всех педагогов
 for teacher in ALL_TEACHERS:
     @dp.message(F.text == teacher["name"])
     async def teacher_handler(message: types.Message, t=teacher):
-        await send_teacher_info(message, t["name"], t)
+        await send_teacher_info(message, t)
 
 
 # Дипломы Тани
@@ -645,7 +690,7 @@ for text, caption, path in TANIA_DIPLOMS:
             except:
                 await message.answer(f"❌ Ошибка загрузки диплома")
         else:
-            await message.answer(f"❌ Фото диплома не найдено: {p}")
+            await message.answer(f"❌ Фото диплома не найдено")
 
 
 # Дипломы Полины Шараевой
@@ -738,67 +783,24 @@ async def back_to_teachers_menu(message: types.Message):
 @dp.message(F.text == "⬅️ Назад")
 async def back_to_main_from_anywhere(message: types.Message):
     await send_welcome(message)
-    # Основное меню (сверху)
-    await message.answer("📋 **Основное меню:**", reply_markup=MAIN_KEYBOARD)
-    # Инлайн-кнопки (снизу)
-    await send_inline_buttons(message)
+    # ПОЛЕЗНЫЕ ССЫЛКИ (reply-кнопки) - сверху
+    await message.answer("🔽 **Полезные ссылки:**", reply_markup=USEFUL_LINKS_KEYBOARD)
+    # ОСНОВНОЕ МЕНЮ (инлайн-кнопки) - снизу
+    await send_main_menu_inline(message)
 
 
-@dp.message(F.text == "💰 Стоимость обучения")
-async def info_price(message: types.Message):
-    await message.answer("💵 **Расценки на обучение:**\n\n⏳ Загружаю актуальные цены...")
-
-    try:
-        photo1 = FSInputFile("Price tags/raszenci1.jpg")
-        caption1 = (
-            "🎹 **Фортепиано**\n"
-            "• Абонемент: 6000 руб/мес (4 занятия) — 1500 руб/занятие\n"
-            "• Разовое занятие: 1900 руб\n"
-            "Только индивидуально\n\n"
-            "🎸 **Гитара / Укулеле**\n"
-            "• Абонемент: 6000 руб/мес (4 занятия) — 1500 руб/занятие\n"
-            "• Разовое занятие: 1900 руб\n"
-            "Только индивидуально\n\n"
-            "👥 **Мини-группа (2 человека)**\n"
-            "• 3600 руб/мес (900 руб/занятие)\n\n"
-            "⏱️ Продолжительность занятия — 55 минут\n\n"
-            "🎵 В результате занятий вы научитесь практическим навыкам игры на инструменте "
-            "и познакомитесь с азами музыкальной теории."
-        )
-        await message.answer_photo(photo=photo1, caption=caption1)
-    except Exception as e:
-        print(f"Ошибка загрузки raszenci1.jpg: {e}")
-        await message.answer("❌ Ошибка загрузки изображения 1")
-
-    try:
-        photo2 = FSInputFile("Price tags/raszenci2.jpg")
-        caption2 = (
-            "🎵 **Групповые занятия**\n\n"
-            "🎤 **Хор для взрослых** (среда, 19:00)\n"
-            "• 300 руб/занятие\n\n"
-            "👥 **Группа для подростков** (вторник, четверг)\n"
-            "• 6100 руб/мес (12 занятий)\n\n"
-            "👶 **Группа для малышей 4-5 лет** (вторник, четверг, 19:00)\n"
-            "• 4100 руб/мес (8 занятий)\n\n"
-            "🎷 **Джазовый ансамбль с Анастасией Сатаровой**\n"
-            "• Для взрослых, понедельник 19:00\n"
-            "• 5600 руб/мес (8 занятий по 45 мин)\n\n"
-            "🏠 **Аренда зала**\n"
-            "• Для учеников: 700 руб/час\n"
-            "• Для гостей студии: от 1100 руб/час\n"
-            "*(точная стоимость зависит от количества человек и формата мероприятия)*"
-        )
-        await message.answer_photo(photo=photo2, caption=caption2)
-    except Exception as e:
-        print(f"Ошибка загрузки raszenci2.jpg: {e}")
-        await message.answer("❌ Ошибка загрузки изображения 2")
-
-    try:
-        photo3 = FSInputFile("Price tags/raszenci3.jpg")
-        await message.answer_photo(photo=photo3)
-    except Exception as e:
-        print(f"Ошибка загрузки raszenci3.jpg: {e}")
-        pass
+# Обработчик для FAQ callback
+@dp.callback_query(lambda c: c.data and c.data.startswith('faq_'))
+async def process_faq_callback(c: CallbackQuery):
+    await c.answer()
+    user_id = c.from_user.id
+    if user_id in last_faq_messages:
+        try:
+            await bot.delete_message(chat_id=c.message.chat.id, message_id=last_faq_messages[user_id])
+        except:
+            pass
+    sent_message = await c.message.answer(FAQ_ANSWERS.get(c.data, "❌ Ответ не найден"))
+    last_faq_messages[user_id] = sent_message.message_id
 
 
 async def main():
