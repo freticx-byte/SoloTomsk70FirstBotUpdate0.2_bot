@@ -130,7 +130,7 @@ async def send_welcome(message: types.Message):
 
 
 async def send_inline_buttons(message: types.Message):
-    """Отправляет инлайн-кнопки и закрепляет сообщение"""
+    """Отправляет инлайн-кнопки"""
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(text="❓ Частые вопросы", callback_data="faq_menu"),
@@ -162,8 +162,11 @@ async def cmd_start(message: types.Message):
         bonus_text = "🎁 **Вступайте в наш телеграм канал, получите занятия в подарок или с хорошей скидкой** ✌️🎶\n\nhttps://t.me/+EMU-EPeAfwlkYTFi"
         await message.answer(bonus_text)
 
-    await send_inline_buttons(message)
+    # Основное меню (первым)
     await message.answer("📋 **Основное меню:**", reply_markup=MAIN_KEYBOARD)
+    
+    # Инлайн-кнопки (вторыми)
+    await send_inline_buttons(message)
 
 
 # ==================== СИСТЕМА ЗАПИСИ ====================
@@ -735,8 +738,10 @@ async def back_to_teachers_menu(message: types.Message):
 @dp.message(F.text == "⬅️ Назад")
 async def back_to_main_from_anywhere(message: types.Message):
     await send_welcome(message)
-    await send_inline_buttons(message)
+    # Основное меню (первым)
     await message.answer("📋 **Основное меню:**", reply_markup=MAIN_KEYBOARD)
+    # Инлайн-кнопки (вторыми)
+    await send_inline_buttons(message)
 
 
 @dp.message(F.text == "💰 Стоимость обучения")
